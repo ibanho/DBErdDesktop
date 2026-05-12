@@ -20,6 +20,8 @@ DEFAULT_PORTS = {
     "MSSQL": 1433,
     "Oracle": 1521,
 }
+DOCUMENT_SUFFIXES = {".docx", ".hwpx", ".pptx"}
+DRAWIO_SUFFIX = ".drawio"
 
 
 class AppBackend(QObject):
@@ -210,6 +212,15 @@ class AppBackend(QObject):
     @Slot(result=bool)
     def connectCurrentSession(self) -> bool:
         return self._with_busy(self._connect_current_session)
+
+    @Slot(result=bool)
+    def disconnectCurrentSession(self) -> bool:
+        if not self.connected:
+            self._set_status("연결된 세션이 없습니다.")
+            return False
+        self._close_connections()
+        self._set_status("연결을 해제했습니다.")
+        return True
 
     @Slot(result=bool)
     def reloadTree(self) -> bool:
@@ -433,12 +444,12 @@ class AppBackend(QObject):
             self.logical_scene = self.scene_builder.build(self.model, "logical")
             self.physical_scene = self.scene_builder.build(self.model, "physical")
             stamp = int(time.time() * 1000)
-            logical_png = self.cache_dir / "logical_preview.png"
-            physical_png = self.cache_dir / "physical_preview.png"
-            self.scene_builder.export_png(self.logical_scene, logical_png)
-            self.scene_builder.export_png(self.physical_scene, physical_png)
-            self.logical_image_url = f"{QUrl.fromLocalFile(str(logical_png)).toString()}?v={stamp}"
-            self.physical_image_url = f"{QUrl.fromLocalFile(str(physical_png)).toString()}?v={stamp}"
+            logical_svg = self.cache_dir / "logical_preview.svg"
+            physical_svg = self.cache_dir / "physical_preview.svg"
+            self.scene_builder.export_svg(self.logical_scene, logical_svg)
+            self.scene_builder.export_svg(self.physical_scene, physical_svg)
+            self.logical_image_url = f"{QUrl.fromLocalFile(str(logical_svg)).toString()}?v={stamp}"
+            self.physical_image_url = f"{QUrl.fromLocalFile(str(physical_svg)).toString()}?v={stamp}"
             self.erdImagesChanged.emit()
             self.hasErdChanged.emit()
             self._set_status("ERD generated.")
@@ -454,8 +465,19 @@ class AppBackend(QObject):
         output_path = self._path_from_url(selected_file)
         if output_path is None:
             return False
-        if output_path.suffix.lower() not in {".docx", ".hwpx", ".pptx"}:
+        suffix = output_path.suffix.lower()
+        if suffix not in {*DOCUMENT_SUFFIXES, DRAWIO_SUFFIX}:
             output_path = output_path.with_suffix(".docx")
+            suffix = output_path.suffix.lower()
+
+        if suffix == DRAWIO_SUFFIX:
+            try:
+                self.scene_builder.export_drawio(self.model, output_path)
+                self._set_status(f"Saved: {output_path}")
+                return True
+            except Exception as exc:
+                self._set_status(f"저장 실패: {exc}")
+                return False
 
         logical_png = output_path.with_name(f"{output_path.stem}_logical.png")
         physical_png = output_path.with_name(f"{output_path.stem}_physical.png")

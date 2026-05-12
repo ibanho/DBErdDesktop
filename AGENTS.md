@@ -4,7 +4,7 @@
 
 ## 프로젝트 개요
 
-DB ERD Desktop은 Python 3.14+와 PySide6/QML 기반 Windows 데스크톱 앱입니다. MySQL, PostgreSQL, Microsoft SQL Server, Oracle에 연결해 데이터베이스/스키마 아래의 테이블과 뷰를 확인하고, 선택한 테이블로 논리/물리 ERD를 생성한 뒤 DOCX, HWPX, PPTX로 내보냅니다.
+DB ERD Desktop은 Python 3.14+와 PySide6/QML 기반 Windows 데스크톱 앱입니다. MySQL, PostgreSQL, Microsoft SQL Server, Oracle에 연결해 데이터베이스/스키마 아래의 테이블과 뷰를 확인하고, 선택한 테이블로 논리/물리 ERD를 생성한 뒤 DOCX, HWPX, PPTX, draw.io로 내보냅니다.
 
 핵심 제품 요구사항은 `doc/PRD.md`에 있고, 사용자용 실행/빌드 안내는 `README.md`에 있습니다.
 
@@ -16,7 +16,7 @@ DB ERD Desktop은 Python 3.14+와 PySide6/QML 기반 Windows 데스크톱 앱입
 - 가상환경 생성: `.python\3.14.5\python.exe -m venv .venv`
 - 기본 의존성 설치: `python -m pip install -r requirements.txt`
 - EXE 패키징 의존성 포함 설치 및 빌드: `.\build_exe.ps1`
-- 빌드 결과: `dist\DBErdDesktop.exe`
+- 빌드 결과: `dist\DBErdDesktop\DBErdDesktop.exe`
 
 패키징은 `DBErdDesktop.spec`의 PyInstaller 설정을 사용합니다. DB 드라이버나 런타임 의존성이 추가되면 `pyproject.toml`, `requirements.txt`, `requirements-exe.txt`, `DBErdDesktop.spec`를 함께 검토하세요.
 
@@ -40,7 +40,7 @@ DB ERD Desktop은 Python 3.14+와 PySide6/QML 기반 Windows 데스크톱 앱입
 - `db_erd_desktop/models.py`: 연결 설정, 세션, 컬럼/테이블/관계/DB 모델 dataclass 정의입니다.
 - `db_erd_desktop/db.py`: SQLAlchemy 엔진 생성, DBMS별 URL 구성, 네임스페이스/테이블/뷰 조회, 메타데이터 반영을 담당합니다.
 - `db_erd_desktop/tunnel.py`: `sshtunnel`을 통한 SSH 포워딩을 열고 닫습니다.
-- `db_erd_desktop/erd_scene.py`: `QGraphicsScene` 기반 논리/물리 ERD 렌더링과 PNG 내보내기를 담당합니다.
+- `db_erd_desktop/erd_scene.py`: `QGraphicsScene` 기반 논리/물리 ERD 렌더링, SVG 프리뷰, PNG/draw.io 내보내기를 담당합니다.
 - `db_erd_desktop/documents.py`: DOCX/PPTX/HWPX 산출물 생성을 담당합니다.
 - `db_erd_desktop/naming.py`: 물리명과 comment 기반 한글 논리명 추론 규칙입니다.
 
@@ -51,7 +51,8 @@ DB ERD Desktop은 Python 3.14+와 PySide6/QML 기반 Windows 데스크톱 앱입
 3. 메인 화면에는 SSH/DB 입력 폼을 상시 노출하지 않습니다. 연결정보 편집은 QML의 `Session > Edit Connection Settings...` 또는 `Edit Connection Settings...` 버튼으로 엽니다.
 4. 연결정보 저장은 `Session > Save Current Session`으로 수행합니다.
 5. `Connect using current session`이 SSH 터널과 DB 연결을 수행하고, 연결 성공 후 트리를 로드합니다.
-6. 선택된 테이블로 논리/물리 ERD를 생성한 뒤 `File > Save...` 또는 `Save...` 버튼으로 DOCX/HWPX/PPTX를 저장합니다.
+6. `Session > Disconnect` 또는 좌측 세션 패널의 `Disconnect` 버튼은 DB/SSH 연결, 트리, ERD 프리뷰를 정리하되 현재 세션 선택 상태는 유지합니다.
+7. 선택된 테이블로 논리/물리 ERD를 생성한 뒤 `File > Save...` 또는 `Save...` 버튼으로 DOCX/HWPX/PPTX/draw.io를 저장합니다.
 
 ## 구현 규칙
 
@@ -59,11 +60,11 @@ DB ERD Desktop은 Python 3.14+와 PySide6/QML 기반 Windows 데스크톱 앱입
 - QML은 Python 객체의 프로퍼티와 슬롯을 호출하는 역할에 집중하고, DB 연결/문서 생성 같은 비즈니스 로직을 QML에 넣지 마세요.
 - 장기 보관되는 데이터 구조는 `models.py` dataclass를 먼저 검토하고, 세션 직렬화 영향이 있으면 `session_store.py`의 버전/호환성을 함께 고려하세요.
 - DBMS별 동작은 `db.py`에 모으고, 드라이버 누락 시 사용자가 이해할 수 있는 한국어 오류 메시지를 유지하세요.
-- SSH 터널 생명주기는 `SshTunnel.close()`와 `AppBackend._close_connections()` 경로를 통해 정리되도록 하세요.
-- ERD 렌더링 변경은 논리/물리 모드가 모두 정상 표시되는지 확인하고, PNG 내보내기 동작도 함께 고려하세요.
-- 문서 출력 변경은 DOCX, PPTX, HWPX 세 형식의 차이를 확인하세요. 현재 HWPX는 이미지 임베딩 대신 PNG 파일명을 본문에 기록합니다.
+- SSH 터널과 DB 엔진 생명주기는 `SshTunnel.close()`와 `AppBackend._close_connections()` 경로를 통해 정리되도록 하세요. 사용자 연결 해제 기능은 현재 세션명을 지우지 않아야 합니다.
+- ERD 렌더링 변경은 논리/물리 모드가 모두 정상 표시되는지 확인하고, SVG 프리뷰와 PNG/draw.io 내보내기 동작도 함께 고려하세요.
+- 문서 출력 변경은 DOCX, PPTX, HWPX, draw.io 형식의 차이를 확인하세요. 현재 HWPX는 이미지 임베딩 대신 PNG 파일명을 본문에 기록하고, draw.io는 논리/물리 ERD를 편집 가능한 두 페이지로 저장합니다.
 - 비밀번호, SSH key passphrase, DB password는 로그/오류 메시지/문서에 노출하지 마세요.
-- 파일 경로와 Windows 실행 흐름을 우선 고려하세요. 이 프로젝트의 주요 배포 대상은 Windows 단일 EXE입니다.
+- 파일 경로와 Windows 실행 흐름을 우선 고려하세요. 이 프로젝트의 주요 배포 대상은 Windows one-folder 패키지입니다.
 - Python 런타임은 프로젝트 로컬 `.python/`에 둘 수 있지만 저장소에는 커밋하지 않습니다. `.venv/`, `.python/`, `.uv-cache/`는 생성물로 취급하세요.
 
 ## 문서 업데이트 규칙
@@ -81,7 +82,7 @@ DB ERD Desktop은 Python 3.14+와 PySide6/QML 기반 Windows 데스크톱 앱입
 - 앱 버전은 SemVer(`MAJOR.MINOR.PATCH`)를 사용합니다. 초기 개발/배포는 `0.x.y`, 안정 배포 기준점은 `1.0.0`으로 잡습니다.
 - 버전의 단일 기준은 `pyproject.toml`의 `[project].version`입니다. 릴리스 버전이 바뀌면 이 값을 먼저 갱신하고, 관련 문서와 패키징 설정도 함께 검토하세요.
 - 릴리스 기준점은 Git 태그로 남깁니다. 예: `git tag -a v0.1.0 -m "v0.1.0"` 후 `git push origin main --tags`.
-- `dist/`, `build/`, `DBErdDesktop.exe` 같은 빌드 산출물은 저장소에 커밋하지 않습니다. EXE는 GitHub Releases의 첨부 파일로 배포하세요.
+- `dist/`, `build/`, `DBErdDesktop.exe` 같은 빌드 산출물은 저장소에 커밋하지 않습니다. 배포 시 `dist\DBErdDesktop` 폴더 전체를 ZIP 또는 설치 프로그램으로 묶어 GitHub Releases에 첨부하세요.
 - 사용자에게 보이는 기능 변경, 호환성 변경, 버그 수정이 누적되면 `CHANGELOG.md` 추가를 우선 검토하세요.
 
 ## 스타일

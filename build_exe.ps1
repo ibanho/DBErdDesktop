@@ -6,6 +6,11 @@ if (-not (Test-Path $python)) {
     throw "Virtual environment not found. Create it first: .\.python\3.14.5\python.exe -m venv .venv"
 }
 
+$legacyOneFile = Join-Path $PSScriptRoot "dist\DBErdDesktop.exe"
+if (Test-Path $legacyOneFile) {
+    Remove-Item $legacyOneFile -Force
+}
+
 & $python -m pip install -r (Join-Path $PSScriptRoot "requirements-exe.txt")
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
@@ -17,4 +22,4 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ""
-Write-Host "Built executable:" (Join-Path $PSScriptRoot "dist\DBErdDesktop.exe")
+Write-Host "Built executable:" (Join-Path $PSScriptRoot "dist\DBErdDesktop\DBErdDesktop.exe")

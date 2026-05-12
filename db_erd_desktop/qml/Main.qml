@@ -132,6 +132,12 @@ ApplicationWindow {
                 enabled: backend.currentSessionName.length > 0
                 onTriggered: backend.saveCurrentSession()
             }
+            MenuSeparator {}
+            Action {
+                text: "Disconnect"
+                enabled: backend.connected && !backend.isBusy
+                onTriggered: backend.disconnectCurrentSession()
+            }
         }
     }
 
@@ -221,7 +227,7 @@ ApplicationWindow {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: backend.connected ? 76 : 132
+                    Layout.preferredHeight: backend.connected ? 120 : 132
                     radius: 8
                     color: root.panel
                     border.color: root.border
@@ -261,6 +267,17 @@ ApplicationWindow {
                                 Layout.preferredWidth: 104
                                 enabled: backend.currentSessionName.length > 0 && !backend.isBusy
                                 onClicked: backend.connectCurrentSession()
+                            }
+                        }
+                        RowLayout {
+                            visible: backend.connected
+                            Layout.fillWidth: true
+                            spacing: 8
+                            ActionButton {
+                                text: "Disconnect"
+                                Layout.fillWidth: true
+                                enabled: backend.connected && !backend.isBusy
+                                onClicked: backend.disconnectCurrentSession()
                             }
                         }
                     }
@@ -840,7 +857,7 @@ ApplicationWindow {
         id: saveFileDialog
         title: "Save ERD Documentation"
         fileMode: FileDialog.SaveFile
-        nameFilters: ["Word Document (*.docx)", "Hancom HWPX (*.hwpx)", "PowerPoint (*.pptx)"]
+        nameFilters: ["Word Document (*.docx)", "Hancom HWPX (*.hwpx)", "PowerPoint (*.pptx)", "Draw.io Diagram (*.drawio)"]
         currentFile: "erd_documentation.docx"
         onAccepted: backend.saveDocumentation(selectedFile)
     }
