@@ -74,6 +74,16 @@ DB ERD Desktop은 Python 3.14+와 PySide6/QML 기반 Windows 데스크톱 앱입
 - `README.md`: 설치, 실행, 빌드, 기능, 사용자 흐름
 - `AGENTS.md`: 개발자가 다음 작업에서 알아야 할 구조나 검증 절차
 
+## 버전관리 및 릴리스
+
+- 브랜치 전략은 단순하게 유지합니다. `main`은 항상 실행 가능한 상태로 두고, 기능/수정/문서 작업은 `feature/*`, `fix/*`, `docs/*` 같은 짧은 작업 브랜치에서 진행한 뒤 병합하세요.
+- 커밋 전 최소 검증으로 `python -m compileall run.py db_erd_desktop`를 수행하세요. `.venv`가 필요하면 `.venv\Scripts\python.exe -m compileall run.py db_erd_desktop`를 사용하세요.
+- 앱 버전은 SemVer(`MAJOR.MINOR.PATCH`)를 사용합니다. 초기 개발/배포는 `0.x.y`, 안정 배포 기준점은 `1.0.0`으로 잡습니다.
+- 버전의 단일 기준은 `pyproject.toml`의 `[project].version`입니다. 릴리스 버전이 바뀌면 이 값을 먼저 갱신하고, 관련 문서와 패키징 설정도 함께 검토하세요.
+- 릴리스 기준점은 Git 태그로 남깁니다. 예: `git tag -a v0.1.0 -m "v0.1.0"` 후 `git push origin main --tags`.
+- `dist/`, `build/`, `DBErdDesktop.exe` 같은 빌드 산출물은 저장소에 커밋하지 않습니다. EXE는 GitHub Releases의 첨부 파일로 배포하세요.
+- 사용자에게 보이는 기능 변경, 호환성 변경, 버그 수정이 누적되면 `CHANGELOG.md` 추가를 우선 검토하세요.
+
 ## 스타일
 
 - Python 코드는 타입 힌트와 `from __future__ import annotations` 패턴을 유지하세요.
