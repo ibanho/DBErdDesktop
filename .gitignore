@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.python/
+.uv-cache/
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Generated ERD/document outputs
+*_logical.png
+*_physical.png
+erd_documentation.docx
+erd_documentation.hwpx
+erd_documentation.pptx
+_verify/
